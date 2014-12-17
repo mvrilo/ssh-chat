@@ -109,6 +109,9 @@ func (s *Server) SysMsg(msg string, args ...interface{}) {
 
 // Broadcast broadcasts the given message to everyone except for the given client
 func (s *Server) Broadcast(msg string, except *Client) {
+	s.Lock()
+	defer s.Unlock()
+
 	logger.Debugf("Broadcast to %d: %s", s.Len(), msg)
 	s.history.Add(msg)
 
@@ -221,12 +224,12 @@ func (s *Server) proposeName(name string) (string, error) {
 
 // Rename renames the given client (user)
 func (s *Server) Rename(client *Client, newName string) {
-	s.Lock()
 	var oldName string
 	if strings.ToLower(newName) == strings.ToLower(client.Name) {
 		oldName = client.Name
 		client.Rename(newName)
 	} else {
+		s.Lock()
 		newName, err := s.proposeName(newName)
 		if err != nil {
 			client.SysMsg("%s", err)
